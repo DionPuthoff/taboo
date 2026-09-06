@@ -2,20 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../components/ui/Button";
 import { Section } from "../components/ui/Section";
 import { TeamInputs } from "../components/home/TeamInputs";
 import { NumberSelector } from "../components/home/NumberSelector";
 import { RuleSelector } from "../components/home/RuleSelector";
 import { DeckGrid } from "../components/home/DeckGrid";
-import { DEFAULT_SETTINGS, loadSettings, saveSettings, stashPendingGame } from "../lib/storage";
+import {
+  DEFAULT_SETTINGS,
+  loadGoldUnlocked,
+  loadSettings,
+  saveGoldUnlocked,
+  saveSettings,
+  stashPendingGame,
+} from "../lib/storage";
 import { GameSettings } from "../lib/types";
 
 export default function HomePage() {
   const router = useRouter();
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const [hydrated, setHydrated] = useState(false);
+  const [goldUnlocked, setGoldUnlocked] = useState(false);
+  const [showGoldToast, setShowGoldToast] = useState(false);
 
   useEffect(() => {
     // Reading localStorage must happen after mount (server has no localStorage),
@@ -23,6 +32,7 @@ export default function HomePage() {
     // "no setState in effect" guideline rather than a derivable render value.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSettings(loadSettings());
+    setGoldUnlocked(loadGoldUnlocked());
     setHydrated(true);
   }, []);
 
@@ -44,6 +54,14 @@ export default function HomePage() {
       saveSettings(next);
       return next;
     });
+  };
+
+  const handleSecretUnlock = () => {
+    if (goldUnlocked) return;
+    setGoldUnlocked(true);
+    saveGoldUnlocked(true);
+    setShowGoldToast(true);
+    setTimeout(() => setShowGoldToast(false), 2400);
   };
 
   const totalCards = settings.selectedDecks.length * 50;
@@ -125,10 +143,38 @@ export default function HomePage() {
         <Section
           title="Choose Your Decks"
           subtitle={`${settings.selectedDecks.length} decks selected · ${totalCards} cards`}
+          headerRight={
+            <button
+              type="button"
+              onClick={handleSecretUnlock}
+              aria-label="???"
+              tabIndex={-1}
+              className="h-6 w-6 shrink-0 rounded-full opacity-[0.04] outline-none transition hover:opacity-20 focus-visible:opacity-40"
+            />
+          }
         >
-          <DeckGrid selectedDecks={settings.selectedDecks} onToggle={toggleDeck} />
+          <DeckGrid
+            selectedDecks={settings.selectedDecks}
+            onToggle={toggleDeck}
+            goldUnlocked={goldUnlocked}
+          />
         </Section>
       </div>
+
+      <AnimatePresence>
+        {showGoldToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed left-1/2 top-6 z-30 -translate-x-1/2 rounded-full border border-amber-300/50 bg-gradient-to-r from-amber-400/90 to-yellow-300/90 px-5 py-2.5 shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+          >
+            <p className="font-display text-sm font-bold text-ink-950">
+              ✨ Secret gold decks unlocked!
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-4 pb-6 pt-4 safe-bottom">
         <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-ink-950 to-transparent" />

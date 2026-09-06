@@ -55,3 +55,24 @@ export function readPendingGame(): GameSettings | null {
     return null;
   }
 }
+
+const GOLD_UNLOCKED_KEY = "taboo-party:gold-unlocked";
+
+/** Once found, the secret gold decks stay revealed on this device. */
+export function loadGoldUnlocked(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(GOLD_UNLOCKED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function saveGoldUnlocked(unlocked: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(GOLD_UNLOCKED_KEY, unlocked ? "true" : "false");
+  } catch {
+    // ignore
+  }
+}
