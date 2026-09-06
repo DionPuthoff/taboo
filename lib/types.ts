@@ -15,6 +15,7 @@ export interface DeckMeta {
   difficulty: Difficulty;
   description: string;
   cardCount: number;
+  secret?: boolean;
 }
 
 export type TabooPenalty = 0 | -1;
